@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, jsonify
-from config import HF_TOKEN, IMGBB_API_KEY
 from gradio_client import Client, handle_file
 from PIL import Image
 from io import BytesIO
@@ -9,6 +8,9 @@ import random
 import os
 
 app = Flask(__name__)
+
+HF_TOKEN = os.environ.get("HF_TOKEN")
+IMGBB_API_KEY = os.environ.get("IMGBB_API_KEY")
 
 os.environ['GRADIO_CLIENT_AUTH_TOKEN'] = HF_TOKEN
 
