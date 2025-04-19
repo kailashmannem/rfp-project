@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Transformation App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>AI Visionary: Enhance, Transform and Recognize</h1>
+        <p class="subtitle">Enhance the way you see the World</p>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="style">Style Transfer</button>
+            <button class="tab-btn" data-tab="caption">Image Caption</button>
+            <button class="tab-btn" data-tab="enhance">Image Enhancement</button>
+        </div>
+
+        <!-- Style Transfer Section -->
+        <div id="style-section" class="section tab-content active">
+            <h2>Style Transfer</h2>
+            <form id="style-form" class="upload-form">
+                <div class="form-group">
+                    <label for="style-image" class="file-input-label">Choose Image</label>
+                    <input type="file" id="style-image" name="image" accept="image/*" required>
+                    <span class="file-name">No file chosen</span>
+                </div>
+                <div class="form-group">
+                    <label for="style-prompt">Style Prompt:</label>
+                    <input type="text" id="style-prompt" name="prompt" placeholder="e.g., cyberpunk city, oil painting, pencil sketch" required>
+                </div>
+                <button type="submit" class="btn">Transform</button>
+            </form>
+            <div class="result-container">
+                <div class="original-image"></div>
+                <div class="processed-image"></div>
+            </div>
+            <div class="loading hidden">
+                <div class="spinner"></div>
+                <p>Processing your image...</p>
+            </div>
+        </div>
+
+        <!-- Image Caption Section -->
+        <div id="caption-section" class="section tab-content">
+            <h2>Image Caption</h2>
+            <form id="caption-form" class="upload-form">
+                <div class="form-group">
+                    <label for="caption-image" class="file-input-label">Choose Image</label>
+                    <input type="file" id="caption-image" name="image" accept="image/*" required>
+                    <span class="file-name">No file chosen</span>
+                </div>
+                <button type="submit" class="btn">Generate Caption</button>
+            </form>
+            <div class="result-container">
+                <div class="original-image"></div>
+                <div class="caption-result"></div>
+            </div>
+            <div class="loading hidden">
+                <div class="spinner"></div>
+                <p>Generating caption...</p>
+            </div>
+        </div>
+
+        <!-- Image Enhancement Section -->
+        <div id="enhance-section" class="section tab-content">
+            <h2>Image Enhancement</h2>
+            <form id="enhance-form" class="upload-form">
+                <div class="form-group">
+                    <label for="enhance-image" class="file-input-label">Choose Image</label>
+                    <input type="file" id="enhance-image" name="image" accept="image/*" required>
+                    <span class="file-name">No file chosen</span>
+                </div>
+                <button type="submit" class="btn">Enhance Image</button>
+            </form>
+            <div class="result-container">
+                <div class="original-image"></div>
+                <div class="processed-image"></div>
+            </div>
+            <div class="loading hidden">
+                <div class="spinner"></div>
+                <p>Enhancing your image...</p>
+            </div>
+        </div>
+
+        <footer>
+            <p>Powered by Hugging Face models</p>
+        </footer>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
