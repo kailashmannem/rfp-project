@@ -49,9 +49,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const section = this.closest('.section');
         const loading = section.querySelector('.loading');
         const resultContainer = section.querySelector('.processed-image');
+        const downloadContainer = section.querySelector('.download-container');
 
         loading.classList.remove('hidden');
         resultContainer.innerHTML = '';
+        downloadContainer.innerHTML = '';
 
         try {
             const response = await fetch('/style_transformation', {
@@ -64,9 +66,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(data.error || 'Failed to process image');
             }
             
-            resultContainer.innerHTML = `<img src="${data.url}" alt="Transformed image">`;
+            resultContainer.innerHTML = `
+                <div class="image-container">
+                    <img src="${data.url}" alt="Transformed image">
+                </div>
+            `;
+            
+            downloadContainer.innerHTML = `
+                <div class="button-container">
+                    <button onclick="window.location.href='${data.url}'" download="transformed_image.jpg" class="btn">Download Image</button>
+                </div>
+            `;
         } catch (error) {
             resultContainer.innerHTML = `<div class="error-message">${error.message}</div>`;
+            downloadContainer.innerHTML = '';
         } finally {
             loading.classList.add('hidden');
         }
@@ -109,9 +122,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const section = this.closest('.section');
         const loading = section.querySelector('.loading');
         const resultContainer = section.querySelector('.processed-image');
+        const downloadContainer = section.querySelector('.download-container');
 
         loading.classList.remove('hidden');
         resultContainer.innerHTML = '';
+        downloadContainer.innerHTML = '';
 
         try {
             const response = await fetch('/enhance_image', {
@@ -124,9 +139,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(data.error || 'Failed to enhance image');
             }
             
-            resultContainer.innerHTML = `<img src="${data.url}" alt="Enhanced image">`;
+            resultContainer.innerHTML = `
+                <div class="image-container">
+                    <img src="${data.url}" alt="Enhanced image">
+                </div>
+            `;
+            
+            downloadContainer.innerHTML = `
+                <div class="button-container">
+                    <button onclick="window.location.href='${data.url}'" download="enhanced_image.jpg" class="btn">Download Image</button>
+                </div>
+            `;
         } catch (error) {
             resultContainer.innerHTML = `<div class="error-message">${error.message}</div>`;
+            downloadContainer.innerHTML = '';
         } finally {
             loading.classList.add('hidden');
         }
