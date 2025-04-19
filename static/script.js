@@ -42,6 +42,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Function to download image
+    async function downloadImage(url, filename) {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(downloadUrl);
+        } catch (error) {
+            console.error('Download failed:', error);
+        }
+    }
+
     // Style Transfer Form
     document.getElementById('style-form').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -74,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             downloadContainer.innerHTML = `
                 <div class="button-container">
-                    <button onclick="window.location.href='${data.url}'" download="transformed_image.jpg" class="btn">Download Image</button>
+                    <button onclick="downloadImage('${data.url}', 'transformed_image.jpg')" class="btn">Download Image</button>
                 </div>
             `;
         } catch (error) {
@@ -147,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             downloadContainer.innerHTML = `
                 <div class="button-container">
-                    <button onclick="window.location.href='${data.url}'" download="enhanced_image.jpg" class="btn">Download Image</button>
+                    <button onclick="downloadImage('${data.url}', 'enhanced_image.jpg')" class="btn">Download Image</button>
                 </div>
             `;
         } catch (error) {
@@ -158,6 +176,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Make downloadImage function available globally
+window.downloadImage = async function(url, filename) {
+    try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+        console.error('Download failed:', error);
+    }
+};
 
 function generateResultsHTML(results) {
     let html = '<h2>Results</h2>';
