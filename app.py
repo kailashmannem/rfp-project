@@ -38,7 +38,7 @@ def style_transformation():
         prompt = request.form['prompt']
         filename = "uploaded_image.jpg"
         image.save(filename)
-        seed = random.randint(1, 1_000_000)
+        seed = random.randint(1_000_000, 2147483647)
 
         client = Client("hysts/ControlNet-v1-1")
         result = client.predict(
@@ -48,11 +48,11 @@ def style_transformation():
             negative_prompt="longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, cropped, worst quality, low quality",
             num_images=1,
             image_resolution=768,
-            num_steps=40,
-            guidance_scale=7,
+            num_steps=100,
+            guidance_scale=9,
             seed=seed,
-            low_threshold=100,
-            high_threshold=200,
+            low_threshold=1,
+            high_threshold=255,
             api_name="/canny"
         )
 
@@ -85,7 +85,7 @@ def enhance_image():
         image = request.files['image']
         filename = "uploaded_image.jpg"
         image.save(filename)
-        seed = random.randint(1, 100_000_000)
+        seed = 42
 
         client = Client("finegrain/finegrain-image-enhancer")
         result = client.predict(
@@ -101,7 +101,7 @@ def enhance_image():
             tile_height=144,
             denoise_strength=0.35,
             num_inference_steps=18,
-            solver="DDIM",
+            solver="DPMSolver",
             api_name="/process"
         )
 
