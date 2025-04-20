@@ -100,7 +100,7 @@ def enhance_image():
             tile_width=112,
             tile_height=144,
             denoise_strength=0.35,
-            num_inference_steps=18,
+            num_inference_steps=30,
             solver="DPMSolver",
             api_name="/process"
         )
