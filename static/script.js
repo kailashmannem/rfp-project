@@ -1,181 +1,336 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Tab switching
-    const tabs = document.querySelectorAll('.tab-btn');
-    const sections = document.querySelectorAll('.tab-content');
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const target = tab.dataset.tab;
+    // Initialize animations
+    initAnimations();
+    
+    // Tab switching functionality
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const sections = document.querySelectorAll('.workspace-section');
+    
+    navButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove active class from all buttons and sections
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            sections.forEach(section => section.classList.remove('active'));
             
-            // Update active tab
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            
-            // Show target section
-            sections.forEach(section => {
-                if (section.id === `${target}-section`) {
-                    section.classList.add('active');
-                } else {
-                    section.classList.remove('active');
-                }
-            });
+            // Add active class to clicked button and corresponding section
+            button.classList.add('active');
+            const targetSection = document.querySelector(`#${button.dataset.tab}-section`);
+            if (targetSection) {
+                targetSection.classList.add('active');
+                
+                // Animate section transition
+                animateSectionTransition(targetSection);
+            }
         });
     });
 
     // File input handling
-    document.querySelectorAll('input[type="file"]').forEach(input => {
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    
+    fileInputs.forEach(input => {
         input.addEventListener('change', function() {
-            const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
-            this.nextElementSibling.textContent = fileName;
-
-            // Show preview
-            if (this.files[0]) {
+            const fileName = this.nextElementSibling;
+            const section = this.closest('.workspace-section');
+            const container = section.querySelector('.preview-box.original .image-container');
+            
+            if (this.files.length > 0) {
+                fileName.textContent = this.files[0].name;
+                fileName.classList.add('has-file');
+                
                 const reader = new FileReader();
-                const container = this.closest('.section').querySelector('.original-image');
-                
                 reader.onload = function(e) {
-                    container.innerHTML = `<img src="${e.target.result}" alt="Original image">`;
+                    container.innerHTML = `<img src="${e.target.result}" alt="Original image" class="preview-image">`;
+                    animateImageAppearance(container.querySelector('img'));
                 };
-                
                 reader.readAsDataURL(this.files[0]);
+            } else {
+                fileName.textContent = 'No file chosen';
+                fileName.classList.remove('has-file');
+                container.innerHTML = '<div class="placeholder">Upload an image</div>';
             }
         });
     });
 
-    // Function to download image
-    async function downloadImage(url, filename) {
-        try {
-            const response = await fetch(url);
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(downloadUrl);
-        } catch (error) {
-            console.error('Download failed:', error);
-        }
-    }
-
-    // Style Transfer Form
-    document.getElementById('style-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const form = new FormData(this);
-        const section = this.closest('.section');
-        const loading = section.querySelector('.loading');
-        const resultContainer = section.querySelector('.processed-image');
-        const downloadContainer = section.querySelector('.download-container');
-
-        loading.classList.remove('hidden');
-        resultContainer.innerHTML = '';
-        downloadContainer.innerHTML = '';
-
-        try {
-            const response = await fetch('/style_transformation', {
-                method: 'POST',
-                body: form
-            });
+    // Form submission handling
+    const forms = document.querySelectorAll('.tool-form');
+    
+    forms.forEach(form => {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to process image');
+            const section = this.closest('.workspace-section');
+            const loadingOverlay = document.querySelector('.loading-overlay');
+            const resultPreview = section.querySelector('.result-preview');
+            
+            // Show loading overlay with animation
+            loadingOverlay.classList.remove('hidden');
+            animateLoadingOverlay(loadingOverlay);
+            
+            const formData = new FormData(this);
+            
+            try {
+                let endpoint;
+                switch(section.id) {
+                    case 'style-section':
+                        endpoint = '/style_transformation';
+                        break;
+                    case 'caption-section':
+                        endpoint = '/caption';
+                        break;
+                    case 'enhance-section':
+                        endpoint = '/enhance_image';
+                        break;
+                }
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Handle success based on section type
+                    if (section.id === 'caption-section') {
+                        const captionContainer = section.querySelector('.caption-container');
+                        if (captionContainer) {
+                            // Create a paragraph element
+                            const captionElement = document.createElement('p');
+                            captionElement.className = 'caption-text';
+                            
+                            // Set the text content directly
+                            captionElement.textContent = result.caption;
+                            
+                            // Clear the container and add the new element
+                            captionContainer.innerHTML = '';
+                            captionContainer.appendChild(captionElement);
+                            
+                            // Animate the appearance
+                            animateCaptionAppearance(captionElement);
+                        }
+                    } else {
+                        // For style transfer and enhancement
+                        const processedContainer = section.querySelector('.preview-box.processed .image-container');
+                        if (processedContainer && result.url) {
+                            processedContainer.innerHTML = `<img src="${result.url}" alt="Processed image" class="preview-image">`;
+                            animateImageAppearance(processedContainer.querySelector('img'));
+                            
+                            // Update comparison images if they exist
+                            const comparisonOriginal = section.querySelector('.comparison-image.original-image');
+                            const comparisonProcessed = section.querySelector('.comparison-image.processed-image');
+                            
+                            if (comparisonOriginal && comparisonProcessed) {
+                                // Get the original image source
+                                const originalImage = section.querySelector('.preview-box.original .image-container img');
+                                if (originalImage) {
+                                    comparisonOriginal.innerHTML = `<img src="${originalImage.src}" alt="Original image">`;
+                                }
+                                
+                                // Set the processed image
+                                comparisonProcessed.innerHTML = `<img src="${result.url}" alt="Processed image">`;
+                            }
+                            
+                            // Add download button
+                            const downloadSection = section.querySelector('.download-section');
+                            if (downloadSection) {
+                                downloadSection.innerHTML = `
+                                    <button class="action-btn download-btn" onclick="downloadImage('${result.url}', 'processed_image.jpg')">
+                                        <span class="btn-icon">⬇️</span>
+                                        <span class="btn-text">Download Result</span>
+                                    </button>
+                                `;
+                                animateDownloadButton(downloadSection.querySelector('.download-btn'));
+                            }
+                        }
+                    }
+                } else {
+                    throw new Error(result.error || 'An error occurred during processing');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.textContent = error.message || 'An error occurred during processing';
+                
+                if (section.id === 'caption-section') {
+                    const captionContainer = section.querySelector('.caption-container');
+                    if (captionContainer) {
+                        captionContainer.innerHTML = '';
+                        captionContainer.appendChild(errorMessage);
+                        animateErrorAppearance(errorMessage);
+                    }
+                } else {
+                    const processedContainer = section.querySelector('.preview-box.processed .image-container');
+                    if (processedContainer) {
+                        processedContainer.innerHTML = '';
+                        processedContainer.appendChild(errorMessage);
+                        animateErrorAppearance(errorMessage);
+                    }
+                }
+            } finally {
+                // Hide loading overlay with animation
+                setTimeout(() => {
+                    loadingOverlay.classList.add('hidden');
+                }, 500);
             }
-            
-            resultContainer.innerHTML = `
-                <div class="image-container">
-                    <img src="${data.url}" alt="Transformed image">
-                </div>
-            `;
-            
-            downloadContainer.innerHTML = `
-                <div class="button-container">
-                    <button onclick="downloadImage('${data.url}', 'transformed_image.jpg')" class="btn">Download Image</button>
-                </div>
-            `;
-        } catch (error) {
-            resultContainer.innerHTML = `<div class="error-message">${error.message}</div>`;
-            downloadContainer.innerHTML = '';
-        } finally {
-            loading.classList.add('hidden');
-        }
-    });
-
-    // Caption Form
-    document.getElementById('caption-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const form = new FormData(this);
-        const section = this.closest('.section');
-        const loading = section.querySelector('.loading');
-        const resultContainer = section.querySelector('.caption-result');
-
-        loading.classList.remove('hidden');
-        resultContainer.innerHTML = '';
-
-        try {
-            const response = await fetch('/caption', {
-                method: 'POST',
-                body: form
-            });
-            
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to generate caption');
-            }
-            
-            resultContainer.innerHTML = `<p>${data.caption}</p>`;
-        } catch (error) {
-            resultContainer.innerHTML = `<div class="error-message">${error.message}</div>`;
-        } finally {
-            loading.classList.add('hidden');
-        }
-    });
-
-    // Enhancement Form
-    document.getElementById('enhance-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const form = new FormData(this);
-        const section = this.closest('.section');
-        const loading = section.querySelector('.loading');
-        const resultContainer = section.querySelector('.processed-image');
-        const downloadContainer = section.querySelector('.download-container');
-
-        loading.classList.remove('hidden');
-        resultContainer.innerHTML = '';
-        downloadContainer.innerHTML = '';
-
-        try {
-            const response = await fetch('/enhance_image', {
-                method: 'POST',
-                body: form
-            });
-            
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to enhance image');
-            }
-            
-            resultContainer.innerHTML = `
-                <div class="image-container">
-                    <img src="${data.url}" alt="Enhanced image">
-                </div>
-            `;
-            
-            downloadContainer.innerHTML = `
-                <div class="button-container">
-                    <button onclick="downloadImage('${data.url}', 'enhanced_image.jpg')" class="btn">Download Image</button>
-                </div>
-            `;
-        } catch (error) {
-            resultContainer.innerHTML = `<div class="error-message">${error.message}</div>`;
-            downloadContainer.innerHTML = '';
-        } finally {
-            loading.classList.add('hidden');
-        }
+        });
     });
 });
+
+// Animation functions
+function initAnimations() {
+    // Animate title on page load
+    anime({
+        targets: '.main-title',
+        opacity: [0, 1],
+        translateY: [-20, 0],
+        duration: 800,
+        easing: 'easeOutExpo'
+    });
+    
+    // Animate subtitle
+    anime({
+        targets: '.subtitle',
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 800,
+        delay: 300,
+        easing: 'easeOutExpo'
+    });
+    
+    // Animate navigation buttons
+    anime({
+        targets: '.nav-btn',
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 600,
+        delay: anime.stagger(100, {start: 500}),
+        easing: 'easeOutExpo'
+    });
+    
+    // Animate active section
+    const activeSection = document.querySelector('.workspace-section.active');
+    if (activeSection) {
+        animateSectionTransition(activeSection);
+    }
+    
+    // Animate particles background
+    animateParticlesBackground();
+}
+
+function animateSectionTransition(section) {
+    // Fade in section content
+    anime({
+        targets: section.querySelectorAll('.section-header, .tool-form, .result-preview'),
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 600,
+        delay: anime.stagger(100),
+        easing: 'easeOutExpo'
+    });
+}
+
+function animateImageAppearance(image) {
+    if (!image) return;
+    
+    // Fade in and scale up image
+    anime({
+        targets: image,
+        opacity: [0, 1],
+        scale: [0.95, 1],
+        duration: 600,
+        easing: 'easeOutExpo'
+    });
+}
+
+function animateCaptionAppearance(caption) {
+    if (!caption) return;
+    
+    // Store the original text
+    const text = caption.textContent;
+    
+    // Clear the text
+    caption.textContent = '';
+    
+    // Create a span for each character
+    const characters = text.split('');
+    characters.forEach(char => {
+        const span = document.createElement('span');
+        span.textContent = char;
+        span.style.opacity = '0';
+        caption.appendChild(span);
+    });
+    
+    // Animate each character
+    anime({
+        targets: caption.querySelectorAll('span'),
+        opacity: [0, 1],
+        easing: 'easeInOutExpo',
+        duration: 1500,
+        delay: anime.stagger(50, {start: 300}),
+        complete: function() {
+            // After animation, set the text directly
+            caption.textContent = text;
+        }
+    });
+}
+
+function animateLoadingOverlay(overlay) {
+    // Fade in loading overlay
+    anime({
+        targets: overlay,
+        opacity: [0, 1],
+        duration: 400,
+        easing: 'easeOutExpo'
+    });
+    
+    // Animate loading text
+    anime({
+        targets: '.loading-text',
+        opacity: [0.5, 1],
+        duration: 1000,
+        loop: true,
+        direction: 'alternate',
+        easing: 'easeInOutQuad'
+    });
+}
+
+function animateDownloadButton(button) {
+    if (!button) return;
+    
+    // Pulse animation for download button
+    anime({
+        targets: button,
+        scale: [0.95, 1.05, 1],
+        duration: 800,
+        easing: 'easeOutElastic(1, .5)'
+    });
+}
+
+function animateErrorAppearance(errorElement) {
+    if (!errorElement) return;
+    
+    // Shake and fade in error message
+    anime({
+        targets: errorElement,
+        opacity: [0, 1],
+        translateX: [-10, 10, -10, 10, 0],
+        duration: 800,
+        easing: 'easeOutExpo'
+    });
+}
+
+function animateParticlesBackground() {
+    // Subtle movement for particles background
+    anime({
+        targets: '.particles-background',
+        backgroundPosition: ['0% 0%', '100% 100%'],
+        duration: 20000,
+        loop: true,
+        direction: 'alternate',
+        easing: 'easeInOutQuad'
+    });
+}
 
 // Make downloadImage function available globally
 window.downloadImage = async function(url, filename) {
